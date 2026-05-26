@@ -1,7 +1,7 @@
 # Software Requirements Specification
 ## v_tech — AI-Native Self-Evolving Manufacturing ERP
 
-**Version:** 0.1 (Discovery Draft)
+**Version:** 0.2 (Open Questions Partially Resolved)
 **Status:** Under Review
 **Owner:** vinithkac@yokostyles.com
 **Date:** 2026-05-26
@@ -735,15 +735,19 @@ The MVP must prove the core thesis: **a factory owner can go from zero to operat
 | Mobile-responsive views | P1 |
 | Usage metering (logging only) | P1 |
 | Supabase Auth (email + magic link) | P0 |
+| WhatsApp notifications (job assignment, status updates) | P1 |
+| WhatsApp reply parsing (worker status updates via reply) | P1 |
+| GST-compliant invoice PDF generation | P1 |
+| Excel export from any list view | P1 |
 
 ### Out of Scope for MVP
 
 | Feature | Phase |
 |---|---|
 | Multi-tenancy (paid customers) | Phase 2 |
-| WhatsApp integration | Phase 2 |
 | Billing / payment collection | Phase 2 |
-| AI quotation from drawing | Phase 2 |
+| AI quotation from drawing / DXF | Out of scope |
+| E-way bill generation | Phase 2 |
 | Advanced bottleneck analytics | Phase 3 |
 | Self-evolution suggestions | Phase 3 |
 | Graph view / relationship explorer | Phase 3 |
@@ -810,6 +814,8 @@ The MVP must prove the core thesis: **a factory owner can go from zero to operat
 | Charts | Recharts | Simple, composable |
 | Command Bar | cmdk | Built for Cmd+K pattern |
 | Drag & Drop | @dnd-kit | Kanban drag-drop |
+| Excel Export | xlsx (SheetJS) | Export any list view to .xlsx |
+| PDF Generation | @react-pdf/renderer | GST-compliant invoice PDFs |
 
 ### Backend
 | Layer | Choice | Reason |
@@ -820,6 +826,7 @@ The MVP must prove the core thesis: **a factory owner can go from zero to operat
 | File Storage | Supabase Storage | Drawings, attachments |
 | Background Jobs | Supabase Edge Functions | Automation triggers, AI analysis |
 | Realtime | Supabase Realtime | Live updates on floor view |
+| WhatsApp | Meta WhatsApp Cloud API | Floor worker notifications + reply parsing |
 
 ### AI Layer
 | Component | Choice | Reason |
@@ -842,23 +849,46 @@ The MVP must prove the core thesis: **a factory owner can go from zero to operat
 
 ## 15. Open Questions
 
-These must be resolved before or during development:
+### Resolved
 
-1. **Pricing validation:** What monthly price would a laser-cutting shop owner actually pay? Need 3 customer conversations before writing billing code.
+| # | Question | Decision |
+|---|---|---|
+| 1 | WhatsApp vs in-app for floor workers | **WhatsApp — MVP required.** Floor workers will not open a browser. |
+| 2 | GST / Indian accounting compliance | **Yes — GST-compliant invoices from day one.** Target is Indian manufacturers. |
+| 3 | DXF / drawing upload for AI quoting | **No.** Manufacturers provide their own cost. AI quoting from drawings is out of scope. |
+| 4 | Onboarding depth | **20 questions.** Thorough interview produces a better schema. Worth the time investment. |
+| 5 | Data export to Excel | **Yes — MVP required.** Manufacturers will demand this on day one. |
 
-2. **Onboarding depth:** Should the AI ask 5 questions or 20? More questions = better schema, but higher abandonment. What's the right balance?
+### Implications on MVP scope from resolved decisions
 
-3. **AI failure UX:** When Claude is unavailable or returns a malformed response, what does the user see? Define the fallback experience.
+**WhatsApp (MVP):**
+- Add WhatsApp Cloud API integration to tech stack
+- Workflow actions must support `send_whatsapp` step type from day one
+- Floor workers receive job assignments and status prompts via WhatsApp
+- Workers can reply via WhatsApp to update job status (e.g., "done" → marks operation complete)
+- Requires: Meta Business account, WhatsApp Cloud API credentials per tenant
 
-4. **Field type inference accuracy:** If a user says "add a field for 'nesting efficiency'", how should the AI decide the type (decimal 0-100? percentage?)? Should it ask or guess?
+**GST Invoices (MVP):**
+- Invoice entity must include: GSTIN (supplier + customer), HSN/SAC codes, CGST/SGST/IGST split, place of supply
+- Generate PDF invoice compliant with GST invoice format
+- E-way bill generation is Phase 2
+- PDF generation library: `@react-pdf/renderer` or `puppeteer`
 
-5. **WhatsApp vs in-app notifications:** Floor workers won't open a web app. Is WhatsApp integration a Phase 2 or is it actually required for MVP adoption?
+**Excel Export (MVP):**
+- Every list view has an "Export to Excel" button
+- Exports visible columns for current filter/sort state
+- Library: `xlsx` (SheetJS)
+- Bulk export of full entity data available from settings
 
-6. **Drawing/DXF upload:** Fabricators work with DXF files. Should the AI be able to parse drawings for material estimation in MVP or Phase 2?
+### Still Open
 
-7. **GST / Indian accounting compliance:** Should invoices be GST-compliant from day one? This significantly increases MVP scope.
+1. **Pricing validation:** Need 3 real customer conversations before writing billing code. What do they currently pay for Tally + Excel + WhatsApp chaos combined?
 
-8. **Data export:** Customers will want to export their data to Excel. Is this an MVP requirement or Phase 2?
+2. **AI failure UX:** When Claude is unavailable or returns a malformed response, what does the user see? Define the fallback experience.
+
+3. **Field type inference:** If user says "add nesting efficiency", should AI guess decimal (0–100) or ask the user?
+
+4. **WhatsApp reply parsing:** How structured must worker replies be? Free text ("done", "finished") vs structured commands ("/done JOB-042")?
 
 ---
 
