@@ -26,7 +26,8 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/onboarding')
+    request.nextUrl.pathname.startsWith('/onboarding') ||
+    request.nextUrl.pathname.startsWith('/auth')   // callback route must be public
   const isApiRoute = request.nextUrl.pathname.startsWith('/api')
   const isPublicRoute = isAuthRoute || isApiRoute || request.nextUrl.pathname === '/'
 
