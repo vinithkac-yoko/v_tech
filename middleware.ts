@@ -38,9 +38,8 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && request.nextUrl.pathname === '/login') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+    // Use a clean URL — don't carry error query params into the app
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return supabaseResponse

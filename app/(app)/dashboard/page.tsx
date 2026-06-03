@@ -18,6 +18,14 @@ export default function DashboardPage() {
   const { entities, tenant, openCommandBar } = useAppStore()
   const [kpis, setKpis] = React.useState<KPIData | null>(null)
   const [loading, setLoading] = React.useState(true)
+  const [dateStr, setDateStr] = React.useState('')
+
+  // Client-only — avoids server/browser locale mismatch hydration error
+  React.useEffect(() => {
+    setDateStr(new Date().toLocaleDateString('en-IN', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    }))
+  }, [])
 
   React.useEffect(() => {
     fetchKPIs()
@@ -64,8 +72,8 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold">
             {tenant ? `Good morning, ${tenant.name}` : 'Dashboard'}
           </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          <p className="text-muted-foreground text-sm mt-0.5" suppressHydrationWarning>
+            {dateStr}
           </p>
         </div>
         <button
