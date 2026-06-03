@@ -7,10 +7,15 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient()
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (!error && data.user) {
-      // Check if user has a tenant, if not create one
+    if (sessionError) {
+      console.error('Session exchange error:', sessionError.message)
+      return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+    }
+
+    if (data.user) {
+      // Check if user already has a tenant
       const { data: tenantUser } = await supabase
         .from('tenant_users')
         .select('tenant_id')
@@ -18,25 +23,34 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (!tenantUser) {
-        // Create tenant and link user
-        const { data: tenant } = await supabase
+        // First login — create tenant and link user
+        const { data: tenant, error: tenantError } = await supabase
           .from('tenants')
           .insert({ name: 'My Business', industry: 'manufacturing' })
           .select()
           .single()
 
-        if (tenant) {
-          await supabase.from('tenant_users').insert({
-            tenant_id: tenant.id,
-            user_id: data.user.id,
-            role: 'owner',
-          })
+        if (tenantError) {
+          console.error('Tenant creation failed:', tenantError.message)
+          // Redirect with error so user sees something actionable
+          return NextResponse.redirect(`${origin}/login?error=tenant_creation_failed`)
+        }
+
+        const { error: linkError } = await supabase.from('tenant_users').insert({
+          tenant_id: tenant.id,
+          user_id: data.user.id,
+          role: 'owner',
+        })
+
+        if (linkError) {
+          console.error('Tenant user link failed:', linkError.message)
+          return NextResponse.redirect(`${origin}/login?error=tenant_link_failed`)
         }
 
         return NextResponse.redirect(`${origin}/onboarding`)
       }
 
-      // Check if onboarding is done
+      // Returning user — check if onboarding is complete
       const { data: tenant } = await supabase
         .from('tenants')
         .select('onboarding_completed')

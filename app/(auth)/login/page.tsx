@@ -7,12 +7,25 @@ import { Loader2, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
+const ERROR_MESSAGES: Record<string, string> = {
+  auth_failed: 'Login link expired or invalid. Please request a new one.',
+  tenant_creation_failed: 'Account setup failed — the database migration may not have been run. See setup instructions.',
+  tenant_link_failed: 'Account setup failed — could not link your user to a workspace.',
+}
+
 export default function LoginPage() {
   const [email, setEmail] = React.useState('')
   const [loading, setLoading] = React.useState(false)
   const [sent, setSent] = React.useState(false)
   const [error, setError] = React.useState('')
   const router = useRouter()
+
+  // Show errors passed back from auth callback
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const err = params.get('error')
+    if (err) setError(ERROR_MESSAGES[err] ?? `Login error: ${err}`)
+  }, [])
   const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
